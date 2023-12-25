@@ -44,10 +44,14 @@ const getUserIdFromToken = (token) => {
 
 app.post('/upload', upload.single('file'), async (req, res) => {
     console.log(req.headers);
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send('Authorization header is missing');
+    }
+    const userToken = authHeader.split(' ')[1];
     if (req.file) {
         const filePath = req.file.path;
         const fileContent = fs.readFileSync(filePath, 'utf8');
-        const userToken = req.headers.authorization.split(' ')[1];
         const userId = getUserIdFromToken(userToken);
         console.log(userId)
         if (!userId) {
@@ -71,7 +75,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
             res.send({ message: 'File processed successfully', data });
         } catch (error) {
             console.error('Error:', error);
-            res.status(500).send('Server Error');
+            res.status(500).send('Error processing file');
         } finally {
             fs.unlinkSync(filePath);
         }
@@ -81,7 +85,12 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 app.get('/feeds', async (req, res) => {
-    const userToken = req.headers.authorization.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send('Authorization header is missing');
+    }
+    const userToken = authHeader.split(' ')[1];
+
     const userId = getUserIdFromToken(userToken);
 
     if (!userId) {
